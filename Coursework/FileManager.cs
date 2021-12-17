@@ -9,22 +9,26 @@ namespace CourseWork
 {
     public partial class FileManager : Form
     {
-        private string copiedFilePath = "";
-        private string relocatableFilePath = "";
-        private string selectedLocationPath = "";
-        private string selectedItemToRename = "";
+        private string copiedFilePath = TextConstants.stringEmptyValue;
+        private string relocatableFilePath = TextConstants.stringEmptyValue;
+        private string selectedLocationPath = TextConstants.stringEmptyValue;
+        private string selectedItemToRename = TextConstants.stringEmptyValue;
+        private string currentSearchBarPath = TextConstants.stringEmptyValue;
 
         public FileManager()
         {
             InitializeComponent();
 
             CreateTreeView();
-            ChangDriverImage();
-            CreateListView();
+            CreateListView1();
+            CreateListView2();
+
+            currentSearchBarPath = SearchBar.Text;
         }
 
 
         // Создание TreeView и ListView
+
         private void CreateTreeView()
         {
             string[] drivers = Environment.GetLogicalDrives();
@@ -35,54 +39,129 @@ namespace CourseWork
             {
                 try
                 {
-                    TreeNode tree = new TreeNode();
+                    string driverText = "Локальный диск " + driver;
 
-                    tree.Name = driver;
+                    treeView1.Nodes.Add(driver, driverText, ImageIndices.driverIndexForTreeView);
 
-                    tree.Text = "Локальный диск " + driver;
-                    treeView1.Nodes.Add(tree.Name, tree.Text, 2);
+                    string[] directories = Directory.GetDirectories(@driver);
 
-                    string[] directory = Directory.GetDirectories(@driver);
-
-                    foreach (string folderPath in directory)
+                    foreach (string folderPath in directories)
                     {
                         // Substring() - удаляет ненужные часть полного адреса
-                        string fileNameInTree = folderPath.Substring(folderPath.LastIndexOf('\\') + 1);
+                        string folderNameInTree = folderPath.Substring(folderPath.LastIndexOf(TextConstants.backslash) + 1);
 
-                        (treeView1.Nodes[i]).Nodes.Add(folderPath, fileNameInTree, 0);
+                        treeView1.Nodes[i].Nodes.Add(folderPath, folderNameInTree, ImageIndices.folderIndexForTreeView);
                     }
-                }
 
+                    string[] files = Directory.GetFiles(@driver);
+
+                    foreach (string filePath in files)
+                    {
+                        string fileNameInTree = filePath.Substring(filePath.LastIndexOf(TextConstants.backslash) + 1);
+
+                        string fileType = filePath.Substring(filePath.LastIndexOf('.') + 1);
+
+                        int photoIndex = SelectionOfImage(fileType);
+
+                        treeView1.Nodes[i].Nodes.Add(filePath, fileNameInTree, photoIndex);
+                    }
+
+                }
                 catch { }
 
                 i++;
             }
         }
 
-        private void CreateListView()
+        private void CreateListView1()
         {
             ColumnHeader columnName = new ColumnHeader();
-            columnName.Text = "Имя";
-            columnName.Width = 200;
-            listView1.Columns.Add(columnName);
 
             ColumnHeader columnСhanged = new ColumnHeader();
-            columnСhanged.Text = "Изменен";
-            columnСhanged.Width = 130;
-            listView1.Columns.Add(columnСhanged);
 
             ColumnHeader columnType = new ColumnHeader();
-            columnType.Text = "Тип";
-            columnType.Width = 70;
-            listView1.Columns.Add(columnType);
 
             ColumnHeader columnSize = new ColumnHeader();
+
+            columnName.Text = "Имя";
+            columnName.Width = 200;
+            
+            columnСhanged.Text = "Изменен";
+            columnСhanged.Width = 130;
+            
+            columnType.Text = "Тип";
+            columnType.Width = 70;
+            
             columnSize.Text = "Размер";
-            columnSize.Width = 70;
+            columnSize.Width = 73;
+
+            listView1.Columns.Add(columnName);
+
+            listView1.Columns.Add(columnСhanged);
+
+            listView1.Columns.Add(columnType);
+
             listView1.Columns.Add(columnSize);
         }
 
-        private void treeView1_CreateTreeInTree(object sender, TreeViewCancelEventArgs e)
+        private void CreateListView2()
+        {
+            ColumnHeader columnName = new ColumnHeader();
+            columnName.Text = "Этот компьютер";
+            columnName.Width = 235;
+            listView2.Columns.Add(columnName);
+
+            listView2.View = View.Details;
+
+
+            string userName = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+            userName = userName.Substring(userName.LastIndexOf(TextConstants.backslash) + 1);
+
+
+            ListViewItem listItemDownloads = new ListViewItem();
+
+            ListViewItem listItemDocuments = new ListViewItem();
+
+            ListViewItem listItemMusic = new ListViewItem();
+
+            ListViewItem listItemVideos = new ListViewItem();
+
+            ListViewItem listItemPictures = new ListViewItem();
+
+
+            listItemDownloads.Name = "C:\\Users\\" + userName + "\\Downloads";
+            listItemDownloads.Text = "Загрузки";
+            listItemDownloads.ImageIndex = ImageIndices.downloadsIndex;
+
+            listItemDocuments.Name = "C:\\Users\\" + userName + "\\Documents";
+            listItemDocuments.Text = "Документы";
+            listItemDocuments.ImageIndex = ImageIndices.documentsIndex;
+
+            listItemMusic.Name = "C:\\Users\\" + userName + "\\Music";
+            listItemMusic.Text = "Музыка";
+            listItemMusic.ImageIndex = ImageIndices.musicIndex;
+
+            listItemVideos.Name = "C:\\Users\\" + userName + "\\Videos";
+            listItemVideos.Text = "Видео";
+            listItemVideos.ImageIndex = ImageIndices.videoIndex;
+
+            listItemPictures.Name = "C:\\Users\\" + userName + "\\Pictures";
+            listItemPictures.Text = "Изображения";
+            listItemPictures.ImageIndex = ImageIndices.pictureIndex;
+
+
+            listView2.Items.Add(listItemDownloads);
+
+            listView2.Items.Add(listItemDocuments);
+
+            listView2.Items.Add(listItemMusic);
+
+            listView2.Items.Add(listItemVideos);
+
+            listView2.Items.Add(listItemPictures);
+        }
+
+        private void TreeView1_CreateTreeInTree(object sender, TreeViewCancelEventArgs e)
         {
             try
             {
@@ -94,128 +173,159 @@ namespace CourseWork
 
                     foreach (string folderPath in folders)
                     {
-                        TreeNode tempTree = new TreeNode();
+                        string folderNameInTree = folderPath.Substring(folderPath.LastIndexOf(TextConstants.backslash) + 1);
 
-                        tempTree.Name = folderPath;
+                        e.Node.Nodes[i].Nodes.Add(folderPath, folderNameInTree);
+                    }
 
-                        tempTree.Text = folderPath.Substring(folderPath.LastIndexOf('\\') + 1);
+                    string[] files = Directory.GetFiles(@selectedTreeFile.Name);
 
-                        e.Node.Nodes[i].Nodes.Add(tempTree);
+                    foreach (string filePath in files)
+                    {
+                        string fileNameInTree = filePath.Substring(filePath.LastIndexOf(TextConstants.backslash) + 1);
+
+                        string fileType = filePath.Substring(filePath.LastIndexOf('.') + 1);
+
+                        int photoIndex = SelectionOfImage(fileType);
+
+                        e.Node.Nodes[i].Nodes.Add(filePath, fileNameInTree, photoIndex);
                     }
 
                     i++;
                 }
             }
-
             catch { }
         }
 
-        private void ChangDriverImage()
+        private void ChangTreeViewImage(TreeViewEventArgs e)
         {
-            foreach (TreeNode tree in treeView1.Nodes)
+            if (File.Exists(e.Node.Name))
             {
-                if (tree.Name.Contains(":\\"))
-                {
-                    tree.SelectedImageIndex = 2;
-                }
+                string fileType = e.Node.Name.Substring(e.Node.Name.LastIndexOf('.') + 1);
+
+                int photoIndex = SelectionOfImage(fileType);
+
+                e.Node.SelectedImageIndex = photoIndex;
+            }
+            else if (e.Node.Name == "C:\\" || e.Node.Name == "D:\\")
+            {
+                e.Node.SelectedImageIndex = ImageIndices.driverIndexForTreeView;
             }
         }
 
 
 
         // Заполнение ListView файлами и папками
-        private void FillWithDirectories(string address)
+
+        private void FillWithDirectories(string path)
         {
             try
             {
                 ListViewItem listItem = new ListViewItem();
-                FileInfo fileInfo = new FileInfo(@address);
 
-                string[] files = Directory.GetFiles(@address);
+                FileInfo fileInfo = new FileInfo(path);
+
+                string[] files = Directory.GetFiles(path);
 
                 foreach (string filePath in files)
                 {
-                    string type = filePath.Substring(filePath.LastIndexOf('.') + 1);
+                    string fileType = filePath.Substring(filePath.LastIndexOf('.') + 1);
 
-                    int photoIndex = SelectionOfImage(type);
+                    int photoIndex = SelectionOfImage(fileType);
 
-                    string ItemName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
+                    string ItemName = filePath.Substring(filePath.LastIndexOf(TextConstants.backslash) + 1);
 
                     fileInfo = new FileInfo(filePath);
 
-                    listItem = new ListViewItem(new string[] { ItemName, fileInfo.LastWriteTime.ToString(), "Файл", (fileInfo.Length / 1000).ToString() + " Кб" }, photoIndex);
+                    listItem = new ListViewItem(new string[] { ItemName, fileInfo.LastWriteTime.ToString(), 
+                               "Файл", (fileInfo.Length / 1000).ToString() + " Кб" }, photoIndex);
                     listItem.Name = filePath;
 
                     listView1.Items.Add(listItem);
                 }
             }
-
             catch { };
         }
 
-        private void FillWithFolders(string address)
+        private void FillWithFolders(string path)
         {
             try
             {
                 ListViewItem listItem = new ListViewItem();
-                FileInfo folderInfo = new FileInfo(@address);
 
-                string[] folders = Directory.GetDirectories(@address);
+                FileInfo folderInfo = new FileInfo(path);
+
+                string[] folders = Directory.GetDirectories(path);
 
                 foreach (string folderPath in folders)
                 {
-                    string ItemName = folderPath.Substring(folderPath.LastIndexOf('\\') + 1);
+                    string ItemName = folderPath.Substring(folderPath.LastIndexOf(TextConstants.backslash) + 1);
 
                     folderInfo = new FileInfo(@folderPath);
 
-                    listItem = new ListViewItem(new string[] { ItemName, folderInfo.LastWriteTime.ToString(), "Папка", "" }, 0);
+                    listItem = new ListViewItem(new string[] { ItemName, folderInfo.LastWriteTime.ToString(),
+                               "Папка", TextConstants.stringEmptyValue }, ImageIndices.folderIndex);
                     listItem.Name = folderPath;
 
                     listView1.Items.Add(listItem);
                 }
-            }
 
-            catch { };
+                currentSearchBarPath = SearchBar.Text;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                SearchBar.Text = currentSearchBarPath;
+
+                FillOrRefreshListView();
+
+                MessageBox.Show(TextConstants.pathEror, TextConstants.error,
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            };
         }
 
-        private int SelectionOfImage(string type)
+        private int SelectionOfImage(string fileType)
         {
             int photoIndex;
 
-            switch (type)
+            switch (fileType)
             {
                 case "docx":
-                    photoIndex = 2;
+                    photoIndex = ImageIndices.docxIndex;
                     break;
 
                 case "jpg":
                 case "png":
-                    photoIndex = 4;
+                case "PNG":
+                    photoIndex = ImageIndices.photoIndex;
                     break;
 
                 case "txt":
-                    photoIndex = 3;
+                    photoIndex = ImageIndices.txtIndex;
                     break;
 
                 case "pdf":
-                    photoIndex = 6;
+                    photoIndex = ImageIndices.pdfIndex;
                     break;
 
                 case "exe":
-                    photoIndex = 5;
+                    photoIndex = ImageIndices.exeIndex;
                     break;
 
                 case "mp3":
                 case "mp4":
-                    photoIndex = 7;
+                    photoIndex = ImageIndices.mpIndex;
                     break;
 
                 case "pptx":
-                    photoIndex = 8;
+                    photoIndex = ImageIndices.pptxIndex;
+                    break;
+
+                case "accdb":
+                    photoIndex = ImageIndices.accdbIndex;
                     break;
 
                 default:
-                    photoIndex = 1;
+                    photoIndex = ImageIndices.fileIndex;
                     break;
             }
 
@@ -224,56 +334,55 @@ namespace CourseWork
 
         private void FillOrRefreshListView()
         {
-            string currentAdress = toolStripTextBox1.Text;
+            string currentPath = SearchBar.Text;
 
             listView1.Items.Clear();
 
-            FillWithFolders(currentAdress);
-            FillWithDirectories(currentAdress);
-        }
-
-        private void FillOrRefreshListView(string selectedPath)
-        {
-            listView1.Items.Clear();
-
-            FillWithFolders(selectedPath);
-            FillWithDirectories(selectedPath);
+            FillWithFolders(currentPath);
+            FillWithDirectories(currentPath);
         }
 
 
         // Работа элементов toolStrip
+
+        private string RemovingUnnecessaryInPath(string tempString)
+        {
+            if (tempString[tempString.Length - 1] == Convert.ToChar(TextConstants.backslash))
+            {
+                do
+                {
+                    tempString = tempString.Remove(tempString.Length - 1, 1);
+                }
+                while (tempString[tempString.Length - 1] != Convert.ToChar(TextConstants.backslash));
+            }
+            else
+            {
+                while (tempString[tempString.Length - 1] != Convert.ToChar(TextConstants.backslash))
+                {
+                    tempString = tempString.Remove(tempString.Length - 1, 1);
+                }
+            }
+
+            return tempString;
+        }
         private void ButtonBackClick(object sender, EventArgs e)
         {
-            string tempPath = toolStripTextBox1.Text;
+            string tempPath = SearchBar.Text;
 
-            if (tempPath[tempPath.Length - 1] == '\\'
+            if (tempPath[tempPath.Length - 1] == Convert.ToChar(TextConstants.backslash)
             && tempPath[tempPath.Length - 2] == ':')
             {
                 return;
             }
 
-            if (tempPath[tempPath.Length - 1] == '\\')
-            {
-                do
-                {
-                    tempPath = tempPath.Remove(tempPath.Length - 1, 1);
-                }
-                while (tempPath[tempPath.Length - 1] != '\\');
-            }
-            else
-            {
-                while (tempPath[tempPath.Length - 1] != '\\')
-                {
-                    tempPath = tempPath.Remove(tempPath.Length - 1, 1);
-                }
-            }
+            tempPath = RemovingUnnecessaryInPath(tempPath);
 
-            toolStripTextBox1.Text = tempPath;
+            SearchBar.Text = tempPath;
 
             FillOrRefreshListView();
         }
 
-        private void toolStripTextBox1_KeyDown(object sender, KeyEventArgs e)
+        private void ToolStripTextBox1_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyValue == 13)
             {
@@ -289,40 +398,68 @@ namespace CourseWork
 
 
         // Переход по пути, после выбора папки из TreeView или ListView
-        private void listView1_MouseDoubleClick(object sender, MouseEventArgs e)
+
+        private void ListView1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            string currentAdress = listView1.SelectedItems[0].Name;
+            string currentPath = listView1.SelectedItems[0].Name;
 
-            if (Directory.Exists(currentAdress))
+            if (Directory.Exists(currentPath))
             {
-                toolStripTextBox1.Text = currentAdress;
+                SearchBar.Text = currentPath;
 
-                FillOrRefreshListView(listView1.SelectedItems[0].Name);
+                FillOrRefreshListView();
             }
             else
             {
-                currentAdress = listView1.SelectedItems[0].Name;
+                currentPath = listView1.SelectedItems[0].Name;
 
                 Process applicationStart = new Process();
 
-                applicationStart.StartInfo.FileName = @currentAdress;
+                applicationStart.StartInfo.FileName = currentPath;
                 applicationStart.Start();
             }
         }
-        private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
+
+        private void TreeView1_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            ChangTreeViewImage(e);
+
             listView1.View = View.Details;
 
-            string currentAdress = e.Node.Name;
+            string currentPath = e.Node.Name;
 
-            toolStripTextBox1.Text = currentAdress;
+            if (Directory.Exists(currentPath))
+            {
+                SearchBar.Text = currentPath;
 
-            FillOrRefreshListView(currentAdress);
+                FillOrRefreshListView();
+            }
         }
 
+        private void treeView1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            string currentPath = treeView1.SelectedNode.Name;
 
+            if (File.Exists(currentPath))
+            {
+                Process applicationStart = new Process();
+
+                applicationStart.StartInfo.FileName = currentPath;
+                applicationStart.Start();
+            }
+        }
+
+        private void listView2_MouseClick(object sender, MouseEventArgs e)
+        {
+            string currentPath = listView2.SelectedItems[0].Name;
+
+            SearchBar.Text = currentPath;
+
+            FillOrRefreshListView();
+        }
 
         // Операции с файлами и папками
+
         private void DeleteFile(string deletePath)
         {
             try
@@ -336,116 +473,123 @@ namespace CourseWork
                     File.Delete(deletePath);
                 }
             }
-            catch { };
+            catch 
+            {
+                MessageBox.Show(TextConstants.errorCause, TextConstants.error, 
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            };
         }
 
         private void RelocateFile()
         {
             try
             {
-                selectedLocationPath = toolStripTextBox1.Text;
+                selectedLocationPath = SearchBar.Text;
 
                 if (Directory.Exists(relocatableFilePath))
                 {
-                    selectedLocationPath += relocatableFilePath.Substring(relocatableFilePath.LastIndexOf('\\'));
+                    selectedLocationPath += relocatableFilePath.Substring(relocatableFilePath.LastIndexOf(TextConstants.backslash));
 
                     Directory.Move(relocatableFilePath, selectedLocationPath);
                 }
                 else
                 {
-                    File.Move(relocatableFilePath, selectedLocationPath);
+                    File.Move(relocatableFilePath, selectedLocationPath + 
+                        relocatableFilePath.Substring(relocatableFilePath.LastIndexOf(TextConstants.backslash)));
                 }
-
-                relocatableFilePath = "";
             }
-
             catch
             {
-                relocatableFilePath = "";
+                MessageBox.Show(TextConstants.errorCause, TextConstants.error,
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
+
+            relocatableFilePath = TextConstants.stringEmptyValue;
         }
 
-        private void CopyFile()
+
+        void CopyDirectory(string pathFromDirectory, string pathToDirectory)
         {
+            Directory.CreateDirectory(pathToDirectory);
+
+            foreach (string filePath in Directory.GetFiles(pathFromDirectory))
+            {
+                string correctFinalPath = pathToDirectory + TextConstants.backslash + Path.GetFileName(filePath);
+
+                File.Copy(filePath, correctFinalPath);
+            }
+
+            foreach (string folderPath in Directory.GetDirectories(pathFromDirectory))
+            {
+                CopyDirectory(folderPath, pathToDirectory + TextConstants.backslash + Path.GetFileName(folderPath));
+            }
+        }
+
+
+        private void CopyFile()
+        { 
             try
             {
-                selectedLocationPath = toolStripTextBox1.Text;
+                selectedLocationPath = SearchBar.Text;
 
                 if (Directory.Exists(copiedFilePath))
                 {
-                    string createdNewDirectory = selectedLocationPath + copiedFilePath.Substring(copiedFilePath.LastIndexOf('\\'));
+                    string createdNewDirectory = selectedLocationPath + 
+                        copiedFilePath.Substring(copiedFilePath.LastIndexOf(TextConstants.backslash));
 
                     Directory.CreateDirectory(createdNewDirectory);
 
-                    string[] files = Directory.GetFiles(copiedFilePath);
-
-                    foreach (string name in files)
-                    {
-                        string fileName = Path.GetFileName(name);
-
-                        string finalFile = Path.Combine(createdNewDirectory, fileName);
-
-                        File.Copy(name, finalFile, true);
-                    }
+                    CopyDirectory(copiedFilePath, createdNewDirectory);
                 }
                 else
                 {
-                    selectedLocationPath += copiedFilePath.Substring(copiedFilePath.LastIndexOf('\\'));
+                    selectedLocationPath += copiedFilePath.Substring(copiedFilePath.LastIndexOf(TextConstants.backslash));
 
                     File.Copy(copiedFilePath, selectedLocationPath, true);
                 }
-
-                copiedFilePath = "";
             }
-
             catch
             {
-                copiedFilePath = "";
+                MessageBox.Show(TextConstants.errorCause, TextConstants.error, 
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
+
+            copiedFilePath = TextConstants.stringEmptyValue;
         }
 
         private void ChangeName()
         {
             try
             {
-                string type = "";
+                string fileType = TextConstants.stringEmptyValue;
 
                 if (File.Exists(selectedItemToRename))
                 {
-                    type = selectedItemToRename.Substring(selectedItemToRename.LastIndexOf('.'));
+                    fileType = selectedItemToRename.Substring(selectedItemToRename.LastIndexOf('.'));
                 }
 
                 string tempPath = selectedItemToRename;
 
-                if (tempPath[tempPath.Length - 1] == '\\')
-                {
-                    do
-                    {
-                        tempPath = tempPath.Remove(tempPath.Length - 1, 1);
-                    }
-                    while (tempPath[tempPath.Length - 1] != '\\');
-                }
-                else
-                {
-                    while (tempPath[tempPath.Length - 1] != '\\')
-                    {
-                        tempPath = tempPath.Remove(tempPath.Length - 1, 1);
-                    }
-                }
+                tempPath = RemovingUnnecessaryInPath(tempPath);
 
-                Directory.Move(selectedItemToRename, Path.Combine(tempPath, toolStripTextBox2.Text + type));
-
-                toolStripTextBox2.Text = "";
+                Directory.Move(selectedItemToRename, Path.Combine(tempPath, TextBoxToRename.Text + fileType));
 
                 FillOrRefreshListView();
             }
-            catch { };
+            catch 
+            {
+                 MessageBox.Show(TextConstants.errorCause, TextConstants.error,
+                 MessageBoxButtons.OK, MessageBoxIcon.Error);
+            };
+
+            TextBoxToRename.Text = TextConstants.stringEmptyValue;
         }
 
 
 
         // Методы ContextMenu (ПКМ по файлу или папке ListView)
-        private void listView1_MouseUp(object sender, MouseEventArgs e)
+
+        private void ListView1_MouseUp(object sender, MouseEventArgs e)
         {
             ListView senderListView = sender as ListView;
 
@@ -453,43 +597,56 @@ namespace CourseWork
             {
                 if (senderListView.SelectedItems.Count > 0)
                 {
-                    contextMenuStrip1.Show(senderListView, e.Location);
+                    RMBOnfile.Show(senderListView, e.Location);
                 }
                 else
                 {
-                    contextMenuStrip2.Show(senderListView, e.Location);
+                    RMBOnEmptySpace.Show(senderListView, e.Location);
                 }
             }
         }
 
-        private void УдалитьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void DeleteInTreeViewAfterDelet()
+        {
+            try
+            {
+                TreeNode[] deletItem = new TreeNode[0];
+
+                deletItem = treeView1.Nodes.Find(listView1.SelectedItems[0].Name, true);
+
+                treeView1.Nodes.Remove(deletItem[0]);
+            }
+            catch { };
+        }
+
+        private void DeleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DeleteFile(listView1.SelectedItems[0].Name);
+
+            DeleteInTreeViewAfterDelet();
 
             FillOrRefreshListView();
         }
 
-        private void ПереместитьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void MoveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            copiedFilePath = "";
-
+            copiedFilePath = TextConstants.stringEmptyValue;
             relocatableFilePath = listView1.SelectedItems[0].Name;
         }
 
-        private void КопироватьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CopyToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            relocatableFilePath = "";
-
+            relocatableFilePath = TextConstants.stringEmptyValue;
             copiedFilePath = listView1.SelectedItems[0].Name;
         }
 
-        private void ВставитьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void InsertToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (relocatableFilePath != "")
+            if (relocatableFilePath != TextConstants.stringEmptyValue)
             {
                 RelocateFile();
             }
-            if (copiedFilePath != "")
+            if (copiedFilePath != TextConstants.stringEmptyValue)
             {
                 CopyFile();
             }
@@ -497,96 +654,125 @@ namespace CourseWork
             FillOrRefreshListView();
         }
 
-        private void ПечатьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void PrintToolStripMenuItem_Click(object sender, EventArgs e)
         {
             PrintDocument printDocument = new PrintDocument();
 
             printDocument.DocumentName = listView1.SelectedItems[0].Name;
-
             printDocument.Print();
         }
 
-        private void ПереименоватьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void RenameToolStripMenuItem_Click(object sender, EventArgs e)
         {
             selectedItemToRename = listView1.SelectedItems[0].Name;
         }
 
 
 
-
         // Методы ContextMenu1 (ПКМ по пустому место ListView)
-        private void СоздатьТекстовыйДокументToolStripMenuItem_Click(object sender, EventArgs e)
+
+        private void CreateTextDocumentToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            File.Create(toolStripTextBox1.Text + "\\Новый текстовый документ.txt").Close();
+            string fileName = SearchBar.Text + TextConstants.newTextDocument;
+
+            File.Create(fileName).Close();
 
             FillOrRefreshListView();
+
+            AddInTreeViewAfterCreat(fileName, ImageIndices.txtIndex);
         }
 
-        private void СоздатьДокументWordMicrosoftWordToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CreateDocumentMicrosoftWordToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            File.Create(toolStripTextBox1.Text + "\\Документ Microsoft Word.docx").Close();
+            string fileName = SearchBar.Text + TextConstants.newDocumentWord;
+
+            File.Create(fileName).Close();
 
             FillOrRefreshListView();
+
+            AddInTreeViewAfterCreat(fileName, ImageIndices.docxIndex);
         }
 
-        private void СоздатьПрезинтациюPowerPointToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CreatePresentationPowerPointToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            File.Create(toolStripTextBox1.Text + "\\Презентация Microsoft PowerPoint.pptx").Close();
+            string fileName = SearchBar.Text + TextConstants.newPresentationPowerPoint;
+
+            File.Create(fileName).Close();
 
             FillOrRefreshListView();
+
+            AddInTreeViewAfterCreat(fileName, ImageIndices.pptxIndex);
         }
 
-        private void СоздатьПапкуToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CreateFolderToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Directory.CreateDirectory(toolStripTextBox1.Text + "\\Новая папка");
+            string folderPath = SearchBar.Text + TextConstants.newFolder;
+
+            Directory.CreateDirectory(folderPath);
 
             FillOrRefreshListView();
+
+            AddInTreeViewAfterCreat(folderPath, ImageIndices.folderIndex);
+        }
+
+        private void AddInTreeViewAfterCreat(string filePath, int imageIndex)
+        {
+            TreeNode[] detectedItem = new TreeNode[1];
+
+            detectedItem = treeView1.Nodes.Find(SearchBar.Text, true);
+
+            string fileName = filePath.Substring(filePath.LastIndexOf(TextConstants.backslash) + 1);
+
+            detectedItem[0].Nodes.Add(filePath, fileName, imageIndex);
         }
 
 
 
         // Проверка нажатых кнопок
-        private void listView1_KeyDown(object sender, KeyEventArgs e)
+
+        private void ListView1_KeyDown(object sender, KeyEventArgs e)
         {
             try
             {
                 if (e.KeyCode == Keys.Delete)
                 {
                     DeleteFile(listView1.SelectedItems[0].Name);
+
+                    DeleteInTreeViewAfterDelet();
                 }
             }
-
             catch { };
 
             FillOrRefreshListView();
         }
 
-        private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
+        private void MenuRMBOnfile_Opening(object sender, CancelEventArgs e)
         {
             if (listView1.SelectedItems[0].Name.Contains(".txt") == true ||
                 listView1.SelectedItems[0].Name.Contains(".docx") == true)
             {
-                ПечатьToolStripMenuItem.Enabled = true;
+                PrintToolStripMenuItem.Enabled = true;
             }
             else
             {
-                ПечатьToolStripMenuItem.Enabled = false;
+                PrintToolStripMenuItem.Enabled = false;
             }
         }
 
-        private void contextMenuStrip2_Opening(object sender, CancelEventArgs e)
+        private void MenuRMBOnEmptySpace_Opening(object sender, CancelEventArgs e)
         {
-            if (copiedFilePath == "" && relocatableFilePath == "")
+            if (copiedFilePath == TextConstants.stringEmptyValue &&
+                relocatableFilePath == TextConstants.stringEmptyValue)
             {
-                ВставитьToolStripMenuItem.Enabled = false;
+                InsertToolStripMenuItem.Enabled = false;
             }
             else
             {
-                ВставитьToolStripMenuItem.Enabled = true;
+                InsertToolStripMenuItem.Enabled = true;
             }
         }
 
-        private void toolStripTextBox2_KeyUp(object sender, KeyEventArgs e)
+        private void ToolStripTextBox2_KeyUp(object sender, KeyEventArgs e)
         {
             if (e.KeyValue == 13)
             {
@@ -594,12 +780,18 @@ namespace CourseWork
             }
         }
 
-        private void listView1_MouseDown(object sender, MouseEventArgs e)
+        private void ListView1_MouseDown(object sender, MouseEventArgs e)
         {
-            if (toolStripTextBox2.Text != "")
+            if (TextBoxToRename.Text != TextConstants.stringEmptyValue)
             {
                 ChangeName();
             }
+        }
+
+        public void InformationAboutProgram_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(TextConstants.informationAboutProgramm, "Информация о программе", 
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
